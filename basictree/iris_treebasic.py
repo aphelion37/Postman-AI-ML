@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("task4yt_tut/iris.csv")
+df = pd.read_csv("iris.csv")
 
 X = df.drop("species", axis=1)
 y = df["species"]
