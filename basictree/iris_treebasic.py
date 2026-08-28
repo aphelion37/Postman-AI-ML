@@ -6,8 +6,6 @@ df = pd.read_csv("iris.csv")
 X = df.drop("species", axis=1)
 y = df["species"]
 
-best_split = None
-best_impurity = float("inf")
 
 def gini(y):
     counts = y.value_counts()
@@ -19,36 +17,98 @@ best_feature = None
 best_threshold = None
 best_impurity = float("inf")
 
-for feature in X.columns:
 
-    values = sorted(X[feature].unique())
+def best_split(X, y):
 
-    for i in range(len(values) - 1):
+    best_feature = None
+    best_threshold = None
+    best_impurity = float("inf")
 
-        threshold = (values[i] + values[i + 1]) / 2
+    for feature in X.columns:
 
-        mask = X[feature] < threshold
+        values = sorted(X[feature].unique())
 
-        y_left = y[mask]
-        y_right = y[~mask]
+        for i in range(len(values) - 1):
 
-        # Don't allow empty children
-        if len(y_left) == 0 or len(y_right) == 0:
-            continue
+            threshold = (values[i] + values[i + 1]) / 2
 
-        left_gini = gini(y_left)
-        right_gini = gini(y_right)
+            mask = X[feature] < threshold
 
-        weighted_gini = (
-            len(y_left) / len(y) * left_gini
-            + len(y_right) / len(y) * right_gini
-        )
+            y_left = y[mask]
+            y_right = y[~mask]
 
-        if weighted_gini < best_impurity:
-            best_impurity = weighted_gini
-            best_feature = feature
-            best_threshold = threshold
+            if len(y_left) == 0 or len(y_right) == 0:
+                continue
 
-print("Best feature:", best_feature)
-print("Best threshold:", best_threshold)
-print("Best Gini:", best_impurity)
+            left_gini = gini(y_left)
+            right_gini = gini(y_right)
+
+            weighted_gini = (
+                len(y_left) / len(y) * left_gini
+                + len(y_right) / len(y) * right_gini
+            )
+
+            if weighted_gini < best_impurity:
+                best_impurity = weighted_gini
+                best_feature = feature
+                best_threshold = threshold
+
+    return best_feature, best_threshold, best_impurity
+
+class Node:
+
+    def __init__(
+        self,
+        feature=None,
+        threshold=None,
+        left=None,
+        right=None,
+        prediction=None
+    ):
+        self.feature = feature
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.prediction = prediction
+
+def build_tree(X, y):
+
+    # Stop if the node contains only one class
+    if len(y.unique()) == 1:
+        return Node(prediction=y.iloc[0])
+
+    # Find the best split
+    feature, threshold, impurity = best_split(X, y)
+
+    if feature is None:
+        prediction = y.value_counts().index[0]
+        return Node(prediction=prediction)
+    
+    # Create a decision node
+    node = Node(
+        feature=feature,
+        threshold=threshold
+    )
+
+    # Split the data
+    mask = X[feature] < threshold
+
+    X_left = X[mask]
+    y_left = y[mask]
+
+    X_right = X[~mask]
+    y_right = y[~mask]
+
+    # Recursively build children
+    node.left = build_tree(X_left, y_left)
+    node.right = build_tree(X_right, y_right)
+
+    return node
+
+tree = build_tree(X, y)
+
+print(tree.feature)
+print(tree.threshold)
+
+print(tree.left.prediction)
+print(tree.right.feature)
