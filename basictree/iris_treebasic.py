@@ -107,8 +107,23 @@ def build_tree(X, y):
 
 tree = build_tree(X, y)
 
-print(tree.feature)
-print(tree.threshold)
+def predict_one(node, x):
 
-print(tree.left.prediction)
-print(tree.right.feature)
+    # We reached a leaf
+    if node.prediction is not None:
+        return node.prediction
+
+    # Ask the node's question
+    if x[node.feature] < node.threshold:
+        return predict_one(node.left, x)
+    else:
+        return predict_one(node.right, x)
+
+test = pd.Series({
+    "sepal_length": float(input("Enter sepal length: ")),
+    "sepal_width": float(input("Enter sepal width: ")),
+    "petal_length": float(input("Enter petal length: ")),
+    "petal_width": float(input("Enter petal width: ")),
+})
+prediction = predict_one(tree, test)
+print(prediction)
