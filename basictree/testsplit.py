@@ -23,6 +23,9 @@ y_train = y.iloc[train_indices]
 X_test = X.iloc[test_indices]
 y_test = y.iloc[test_indices]
 
+print(y_train.value_counts())
+print(y_test.value_counts())
+
 def gini(y):
     counts = y.value_counts()
     probabilities = counts / len(y)
