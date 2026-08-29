@@ -9,6 +9,7 @@ y = df["species"]
 
 indices = list(range(len(X)))
 
+#seed will ensure that the i get the same 'random' split everytime
 rnd.seed(42)
 rnd.shuffle(indices)
 
@@ -22,9 +23,6 @@ y_train = y.iloc[train_indices]
 
 X_test = X.iloc[test_indices]
 y_test = y.iloc[test_indices]
-
-print(y_train.value_counts())
-print(y_test.value_counts())
 
 def gini(y):
     counts = y.value_counts()
@@ -173,4 +171,21 @@ for i in range(len(y_train)):
 train_accuracy = correct / len(y_train)
 
 print("Train accuracy:", train_accuracy)
+
+print("\n")
+
+def print_tree(node, depth=0):
+    indent = "    " * depth
+
+    if node.prediction is not None:
+        print(indent + f"→ {node.prediction}")
+        return
+
+    print(indent + f"[{node.feature} < {node.threshold:.2f}]")
+    print(indent + "├── True:")
+    print_tree(node.left, depth + 1)
+    print(indent + "└── False:")
+    print_tree(node.right, depth + 1)
+
+print_tree(tree)
 
