@@ -34,6 +34,8 @@ best_feature = None
 best_threshold = None
 best_impurity = float("inf")
 
+def majority_class(y):
+    return y.value_counts().index[0]
 
 def best_split(X, y):
 
@@ -88,26 +90,24 @@ class Node:
         self.right = right
         self.prediction = prediction
 
-def build_tree(X, y):
+def build_tree(X, y, depth=0, max_depth=None):
 
-    # Stop if the node contains only one class
+    # 1. Pure node
     if len(y.unique()) == 1:
         return Node(prediction=y.iloc[0])
 
-    # Find the best split
+    # 2. Maximum depth reached
+    if max_depth is not None and depth >= max_depth:
+        return Node(prediction=majority_class(y))
+
+    # 3. Find best split
     feature, threshold, impurity = best_split(X, y)
 
+    # 4. No useful split exists
     if feature is None:
-        prediction = y.value_counts().index[0]
-        return Node(prediction=prediction)
-    
-    # Create a decision node
-    node = Node(
-        feature=feature,
-        threshold=threshold
-    )
+        return Node(prediction=majority_class(y))
 
-    # Split the data
+    # 5. Split the data
     mask = X[feature] < threshold
 
     X_left = X[mask]
@@ -116,13 +116,26 @@ def build_tree(X, y):
     X_right = X[~mask]
     y_right = y[~mask]
 
-    # Recursively build children
-    node.left = build_tree(X_left, y_left)
-    node.right = build_tree(X_right, y_right)
+    # 6. Create decision node
+    node = Node(
+        feature=feature,
+        threshold=threshold
+    )
+
+    # 7. Recursively build children
+    node.left = build_tree(
+        X_left, y_left,
+        depth + 1,
+        max_depth
+    )
+
+    node.right = build_tree(
+        X_right, y_right,
+        depth + 1,
+        max_depth
+    )
 
     return node
-
-tree = build_tree(X_train, y_train)
 
 def predict_one(node, x):
 
@@ -136,56 +149,57 @@ def predict_one(node, x):
     else:
         return predict_one(node.right, x)
 
-test_predictions = []
+class DecisionTree:
+    def __init__(self, max_depth=None):
+        self.root = None
+        self.max_depth = max_depth
 
-# Make predictions on the test set
-for i in range(len(X_test)):
-    prediction = predict_one(tree, X_test.iloc[i])
-    test_predictions.append(prediction)
+    def fit(self, X, y):
+        self.root = build_tree(
+            X, y,
+            max_depth=self.max_depth
+        )
 
-correct = 0
+    def predict(self, X):
+        predictions = []
 
-# Calculate accuracy
-for i in range(len(y_test)):
-    if test_predictions[i] == y_test.iloc[i]:
-        correct += 1
+        for i in range(len(X)):
+            prediction = predict_one(self.root, X.iloc[i])
+            predictions.append(prediction)
 
-accuracy = correct / len(y_test)
+        return predictions
 
-print("Test accuracy:", accuracy)
+tree = DecisionTree()
 
-#Do the same for the training set - should be 1.0
+tree.fit(X_train, y_train)
 
-train_predictions = []
+train_predictions = tree.predict(X_train)
+test_predictions = tree.predict(X_test)
 
-for i in range(len(X_train)):
-    prediction = predict_one(tree, X_train.iloc[i])
-    train_predictions.append(prediction)
+def accuracy(y_true, predictions):
+    correct = 0
 
-correct = 0
+    for i in range(len(y_true)):
+        if y_true.iloc[i] == predictions[i]:
+            correct += 1
 
-for i in range(len(y_train)):
-    if train_predictions[i] == y_train.iloc[i]:
-        correct += 1
+    return correct / len(y_true)
 
-train_accuracy = correct / len(y_train)
+for depth in [2,3,4,None]:
 
-print("Train accuracy:", train_accuracy)
+    tree = DecisionTree(max_depth=depth)
 
-print("\n")
+    tree.fit(X_train, y_train)
 
-def print_tree(node, depth=0):
-    indent = "    " * depth
+    train_predictions = tree.predict(X_train)
+    test_predictions = tree.predict(X_test)
 
-    if node.prediction is not None:
-        print(indent + f"→ {node.prediction}")
-        return
+    train_acc = accuracy(y_train, train_predictions)
+    test_acc = accuracy(y_test, test_predictions)
 
-    print(indent + f"[{node.feature} < {node.threshold:.2f}]")
-    print(indent + "├── True:")
-    print_tree(node.left, depth + 1)
-    print(indent + "└── False:")
-    print_tree(node.right, depth + 1)
-
-print_tree(tree)
+    print(
+        "Depth:", depth,
+        "Train:", train_acc,
+        "Test:", test_acc
+    )
 
