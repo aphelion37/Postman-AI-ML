@@ -9,7 +9,7 @@ import random as rnd
 # We separate the feature matrix X from the target vector y.
 # We then shuffle the rows with a fixed random seed so the split is reproducible.
 # This makes it easy to compare different trees and parameter settings reliably.
-df = pd.read_csv("lifestyle.csv")
+df = pd.read_csv("movie_ready.csv")
 
 # The dataset schema changes across examples: some files use "Y", others use "Genre",
 # and the lifestyle dataset uses "job_type" as the class label. We detect the target
@@ -21,6 +21,35 @@ X = df.drop(target_column, axis=1)
 y = df[target_column]
 
 indices = list(range(len(X)))
+
+import random
+
+def bootstrap_sample(X, y):
+    n_samples = len(X)
+
+    sampled_indices = []
+
+    for i in range(n_samples):
+        random_index = random.randrange(0, n_samples)
+        sampled_indices.append(random_index)
+
+    X_boot = X.iloc[sampled_indices].copy()
+    y_boot = y.iloc[sampled_indices].copy()
+
+    return X_boot, y_boot
+
+def choose_random_features(X, max_features):
+    feature_names = list(X.columns)
+
+    if max_features is None:
+        max_features = len(feature_names)
+
+    if max_features > len(feature_names):
+        max_features = len(feature_names)
+
+    selected_features = rnd.sample(feature_names, max_features)
+
+    return selected_features
 
 # A fixed seed ensures the same random split is generated every time we run the script.
 # Without this, each run might choose a different training/test arrangement.
@@ -81,7 +110,7 @@ def majority_class(y):
 # This function scans every feature and every possible threshold between adjacent feature values.
 # It tries to minimize weighted Gini impurity after the split.
 # The "best split" is the one that creates the most homogeneous children.
-def best_split(X, y):
+def best_split(X, y, feature_names=None):
 
     # Start by assuming there is no valid split yet.
     best_feature = None
@@ -89,7 +118,9 @@ def best_split(X, y):
     best_impurity = float("inf")
 
     # Try each feature one by one.
-    for feature in X.columns:
+    if feature_names is None:
+        feature_names = list(X.columns)
+    for feature in feature_names:
 
         # Look at all unique values in this column.
         # Example: values = [0.5, 1.2, 3.7]
@@ -166,7 +197,16 @@ class Node:
 # ------------------------------------------------------------
 # This is the core of the algorithm. We build the tree by repeatedly finding the best split,
 # creating two child branches, and recursing until a stopping condition is reached.
-def build_tree(X, y, depth=0, max_depth=None, min_samples_split=2, min_samples_leaf=1):
+def build_tree(
+    X,
+    y,
+    depth=0,
+    max_depth=None,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    feature_names=None,
+    max_features=None
+):
 
     # Stop if every sample in this node belongs to the same class.
     # This is a pure node, so no further split is needed.
@@ -183,8 +223,21 @@ def build_tree(X, y, depth=0, max_depth=None, min_samples_split=2, min_samples_l
     if len(y) < min_samples_split:
         return Node(prediction=majority_class(y))
 
-    # Find the best feature/threshold pair from all possible splits.
-    feature, threshold, impurity = best_split(X, y)
+    # Choose a fresh feature subset for this node when requested.
+    features_for_this_node = feature_names
+
+    if max_features is not None:
+        features_for_this_node = choose_random_features(
+            X,
+            max_features
+        )
+
+    # Find the best feature/threshold pair from the allowed features.
+    feature, threshold, impurity = best_split(
+        X,
+        y,
+        features_for_this_node
+    )
 
     # If no valid split exists, make this a leaf and predict the majority class.
     if feature is None:
@@ -219,7 +272,9 @@ def build_tree(X, y, depth=0, max_depth=None, min_samples_split=2, min_samples_l
         depth + 1,
         max_depth,
         min_samples_split,
-        min_samples_leaf
+        min_samples_leaf,
+        feature_names,
+        max_features
     )
 
     node.right = build_tree(
@@ -228,7 +283,9 @@ def build_tree(X, y, depth=0, max_depth=None, min_samples_split=2, min_samples_l
         depth + 1,
         max_depth,
         min_samples_split,
-        min_samples_leaf
+        min_samples_leaf,
+        feature_names,
+        max_features
     )
 
     return node
@@ -260,7 +317,8 @@ class DecisionTree:
         self,
         max_depth=None,
         min_samples_split=2,
-        min_samples_leaf=1
+        min_samples_leaf=1,
+        max_features=None
     ):
         # Root is the starting point of the entire tree.
         self.root = None
@@ -269,6 +327,7 @@ class DecisionTree:
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
 
     def fit(self, X, y):
         # Build the tree from the training data.
@@ -277,7 +336,8 @@ class DecisionTree:
             y,
             max_depth=self.max_depth,
             min_samples_split=self.min_samples_split,
-            min_samples_leaf=self.min_samples_leaf
+            min_samples_leaf=self.min_samples_leaf,
+            max_features=self.max_features
         )
 
     def predict(self, X):
@@ -291,16 +351,77 @@ class DecisionTree:
 
         return predictions
 
+class RandomForestClassifier:
+    def __init__(
+        self,
+        n_trees=5,
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        max_features=None,
+        random_seed=22
+    ):
+        self.n_trees = n_trees
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
+        self.random_seed = random_seed
+        self.trees = []
+
+    def fit(self, X, y):
+        self.trees = []
+        random.seed(self.random_seed)
+
+        for i in range(self.n_trees):
+            X_boot, y_boot = bootstrap_sample(X, y)
+
+            tree = DecisionTree(
+                max_depth=self.max_depth,
+                min_samples_split=self.min_samples_split,
+                min_samples_leaf=self.min_samples_leaf,
+                max_features=self.max_features
+            )
+
+            tree.fit(X_boot, y_boot)
+            self.trees.append(tree)
+    def predict(self, X):
+        tree_predictions = []
+
+        for tree in self.trees:
+            single_tree_predictions = tree.predict(X)
+            tree_predictions.append(single_tree_predictions)
+
+        final_predictions = []
+
+        for i in range(len(X)):
+            vote_counts = {}
+
+            for j in range(len(self.trees)):
+                label = tree_predictions[j][i]
+
+                if label not in vote_counts:
+                    vote_counts[label] = 0
+
+                vote_counts[label] = vote_counts[label] + 1
+
+            best_label = None
+            best_count = -1
+
+            for label, count in vote_counts.items():
+                if count > best_count:
+                    best_label = label
+                    best_count = count
+
+            final_predictions.append(best_label)
+
+        return final_predictions
+
 # ------------------------------------------------------------
 # 9) Train the model and evaluate it
 # ------------------------------------------------------------
 # Build a tree with default settings and assess training/test accuracy.
-tree = DecisionTree()
 
-tree.fit(X_train, y_train)
-
-train_predictions = tree.predict(X_train)
-test_predictions = tree.predict(X_test)
 
 # ------------------------------------------------------------
 # 10) Accuracy metric
@@ -316,6 +437,33 @@ def accuracy(y_true, predictions):
 
     return correct / len(y_true)
 
+print("\nEffect of max_features:")
+
+for number_of_features in [1, 2, 3, 4]:
+    forest = RandomForestClassifier(
+        n_trees=10,
+        max_depth=4,
+        min_samples_leaf=2,
+        max_features=number_of_features,
+        random_seed=42
+    )
+
+    forest.fit(X_train, y_train)
+
+    train_predictions = forest.predict(X_train)
+    test_predictions = forest.predict(X_test)
+
+    train_accuracy = accuracy(y_train, train_predictions)
+    test_accuracy = accuracy(y_test, test_predictions)
+    accuracy_gap = train_accuracy - test_accuracy
+
+    print(
+        "Features per node:", number_of_features,
+        "Train:", train_accuracy,
+        "Test:", test_accuracy,
+        "Gap:", accuracy_gap
+    )
+
 # ------------------------------------------------------------
 # 11) Hyperparameter sweep: depth and minimum split size
 # ------------------------------------------------------------
@@ -323,29 +471,5 @@ def accuracy(y_true, predictions):
 # - Larger max_depth can let the tree memorize training examples.
 # - Increasing min_samples_split makes the tree stop earlier, which can reduce overfitting.
 # We track both training and test accuracy to see how well the tree generalizes.
-for depth in [4, 6, 9, 14, 25, 50]:
-    for samples1 in [50, 100, 200, 500, 1000, 5000]:
-        for samples2 in [50, 100, 200, 500, 1000, 5000]:
-            # Create a new tree for each parameter combination.
-            tree = DecisionTree(max_depth=depth, min_samples_split=samples1, min_samples_leaf=samples2)
 
-            # Fit on training data.
-            tree.fit(X_train, y_train)
-
-            # Make predictions on both train and test sets.
-            train_predictions = tree.predict(X_train)
-            test_predictions = tree.predict(X_test)
-
-            # Evaluate both sets.
-            train_acc = accuracy(y_train, train_predictions)
-            test_acc = accuracy(y_test, test_predictions)
-
-            # Print the result for each configuration.
-            print(
-                "Depth:", depth,
-                "min_samples_split:", samples1,
-                "min_samples_leaf:", samples2,
-                "Train:", train_acc,
-                "Test:", test_acc
-            )
 
