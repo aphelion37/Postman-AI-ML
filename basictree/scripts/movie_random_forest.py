@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
 import random as rnd
 
 # ------------------------------------------------------------
@@ -187,13 +186,17 @@ class Node:
         threshold=None,
         left=None,
         right=None,
-        prediction=None
+        prediction=None,
+        n_samples=0,
+        impurity_decrease=0
     ):
         self.feature = feature
         self.threshold = threshold
         self.left = left
         self.right = right
         self.prediction = prediction
+        self.n_samples = n_samples
+        self.impurity_decrease = impurity_decrease
 
 # ------------------------------------------------------------
 # 6) Recursive tree construction
@@ -262,9 +265,22 @@ def build_tree(
         return Node(prediction=majority_class(y))
 
     # Create the internal decision node with the chosen test.
+    parent_gini = gini(y)
+    left_gini = gini(y_left)
+    right_gini = gini(y_right)
+    
+    weighted_child_gini = (
+        len(y_left) / len(y) * left_gini
+        + len(y_right) / len(y) * right_gini
+    )
+    
+    impurity_decrease = parent_gini - weighted_child_gini
+    
     node = Node(
         feature=feature,
-        threshold=threshold
+        threshold=threshold,
+        n_samples=len(y),
+        impurity_decrease=impurity_decrease
     )
 
     # Recursively build the left and right subtrees.
@@ -277,7 +293,7 @@ def build_tree(
         min_samples_split,
         min_samples_leaf,
         feature_names,
-        max_features
+        max_features,
     )
 
     node.right = build_tree(
@@ -419,7 +435,7 @@ class RandomForestClassifier:
             final_predictions.append(best_label)
 
         return final_predictions
-
+    
 # ------------------------------------------------------------
 # 9) Train the model and evaluate it
 # ------------------------------------------------------------
@@ -439,40 +455,4 @@ def accuracy(y_true, predictions):
             correct += 1
 
     return correct / len(y_true)
-
-print("\nEffect of max_features:")
-
-for number_of_features in [1, 2, 3, 4]:
-    forest = RandomForestClassifier(
-        n_trees=10,
-        max_depth=4,
-        min_samples_leaf=2,
-        max_features=number_of_features,
-        random_seed=42
-    )
-
-    forest.fit(X_train, y_train)
-
-    train_predictions = forest.predict(X_train)
-    test_predictions = forest.predict(X_test)
-
-    train_accuracy = accuracy(y_train, train_predictions)
-    test_accuracy = accuracy(y_test, test_predictions)
-    accuracy_gap = train_accuracy - test_accuracy
-
-    print(
-        "Features per node:", number_of_features,
-        "Train:", train_accuracy,
-        "Test:", test_accuracy,
-        "Gap:", accuracy_gap
-    )
-
-# ------------------------------------------------------------
-# 11) Hyperparameter sweep: depth and minimum split size
-# ------------------------------------------------------------
-# This loop experiments with different levels of complexity.
-# - Larger max_depth can let the tree memorize training examples.
-# - Increasing min_samples_split makes the tree stop earlier, which can reduce overfitting.
-# We track both training and test accuracy to see how well the tree generalizes.
-
 
