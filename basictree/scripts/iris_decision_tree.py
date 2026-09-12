@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("iris.csv")
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+df = pd.read_csv(DATA_DIR / "iris.csv")
 
 X = df.drop("species", axis=1)
 y = df["species"]

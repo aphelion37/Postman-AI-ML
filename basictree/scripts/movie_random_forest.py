@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import random as rnd
@@ -9,7 +11,8 @@ import random as rnd
 # We separate the feature matrix X from the target vector y.
 # We then shuffle the rows with a fixed random seed so the split is reproducible.
 # This makes it easy to compare different trees and parameter settings reliably.
-df = pd.read_csv("movie_ready.csv")
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+df = pd.read_csv(DATA_DIR / "movie_ready.csv")
 
 # The dataset schema changes across examples: some files use "Y", others use "Genre",
 # and the lifestyle dataset uses "job_type" as the class label. We detect the target
