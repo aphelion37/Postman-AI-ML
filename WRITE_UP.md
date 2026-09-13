@@ -1,6 +1,6 @@
 ### Write Up
 
-##### How I Learnt
+##### How and what I Learnt
 
 I started in Aug by going through all the resources provided in the first mail. I may have forgotten the specifics by now but I got a good feel for the basic aspects of statistical learning, some of the vocabulary and metrics, and developed an interest in the field.
 
@@ -12,13 +12,14 @@ For writing the code, copilot and chatgpt were a big help as i told them to guid
 
 I definitely am not good at using Git and realized that I wasn't on the main branch for half the work I did. Anyhow I managed to make it work and show meaningful commits. I also ended up doing most of the work on a single file, but saved results from different experiments in the form of many screenshots. I also referred to the Stanford lecture for the theory.
 
-
-
 I did not implement regression and categorical variables mainly because I wanted to get till making forests before making changes in the tree code that would take me time to understand.
 
+From what I understand, a tree for regression is supposed to replace Gini impurity with a measure of numerical variation such as mean squared error, and store the mean target value at each leaf instead of the majority class. A regression forest would then average the predictions of its trees rather than using a majority vote. 
+Categorical predictor variables could be handled by one-hot encoding (basically treating each category as a seperate feature with value 1 or 0) them into binary columns, allowing the existing numerical split logic to use thresholds such as 0.5. I've hear more advanced implementation could split directly on groups of categories, but 
 
+I also wanted to run it on a huge dataset which theoretically should be predictable - so the 56000 x 24 lifestyle one seemed like a great option. It also made me realize the insane amount of compute power required for training. This set was so big that I simply couldn't finish training it. I had to significantly shorten it(by more than 95%) to reduce the training time for a single tree to just over an hour on my laptop. (Also made copilot add a progress check to confirm its still running). I got a max accuracy of 20% on that data after trying atleast 8 to 9 different parameter sets and even a forest with mutually exclusive tree datasets, with some tests even giving an accuracy worse than a random guess. Guess job type cant be predicted based on factors like bmi, stress levels or blood sugar, or the model works horribly on this particular dataset. 
 
-I also wanted to run it on a huge dataset which theoretically should be predictable - so the 56000 x 24 lifestyle one seemed like a great option. It also made me realize the insane amount of compute power required for training. This set was so big that I simply couldn't finish training it. I had to significantly shorten it(by more than 95%) to reduce the training time for a single tree to just over an hour on my laptop. (Also made copilot add a progress check to confirm its still running)
+The fundamental question of whether a decision tree is actually useful today compared to other methods came to me quite late, after having a discussion with my friends about the task options we had. 
 
 ##### How Decision Trees and Forests Work
 
@@ -64,6 +65,8 @@ Impurity-based importance is computed directly from the tree structure. Each tim
 
 Permutation importance is a more performance-based check. We take a trained model, randomly shuffle one feature in the validation or test set, and measure how much the accuracy or error worsens. If the feature is important, scrambling it should cause a noticeable drop in performance. Repeating this across features gives a ranking of which variables matter most. The advantage of permutation importance is that it directly measures the effect of a feature on predictive performance, not just on the internal split logic.
 
-##### Learnings
+
+Apparently decision trees and forests are tradtionally used for structured, tabular data like credit scoring and loan approval, fraud detection, customer churn prediction, medical risk assessment, demand forecasting, recommendation systems, and marketing decisions. 
+Individual trees are useful for maximum interpretability, while random forests are useful when better predictive stability is needed. They are also often used as a strong baseline for a problem or to estimate feature importance before trying more complex models. Although other methods, such as gradient-boosted trees and neural networks, may perform better in many situations, forests remain practical because while they can model nonlinear relationships, they require relatively little preprocessing, and work well on many different types of tabular data.
 
 
