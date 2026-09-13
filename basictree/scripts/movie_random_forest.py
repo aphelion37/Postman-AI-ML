@@ -112,7 +112,7 @@ def majority_class(y):
 # This function scans every feature and every possible threshold between adjacent feature values.
 # It tries to minimize weighted Gini impurity after the split.
 # The "best split" is the one that creates the most homogeneous children.
-def best_split(X, y, feature_names=None):
+def best_split(X, y, feature_names=None, progress_callback=None):
 
     # Start by assuming there is no valid split yet.
     best_feature = None
@@ -122,7 +122,9 @@ def best_split(X, y, feature_names=None):
     # Try each feature one by one.
     if feature_names is None:
         feature_names = list(X.columns)
-    for feature in feature_names:
+    total_features = len(feature_names)
+
+    for feature_number, feature in enumerate(feature_names, start=1):
 
         # Look at all unique values in this column.
         # Example: values = [0.5, 1.2, 3.7]
@@ -164,6 +166,27 @@ def best_split(X, y, feature_names=None):
                 best_impurity = weighted_gini
                 best_feature = feature
                 best_threshold = threshold
+
+            if (
+                progress_callback is not None
+                and (i + 1) % 1000 == 0
+            ):
+                progress_callback(
+                    "threshold",
+                    feature_number,
+                    total_features,
+                    feature,
+                    i + 1,
+                    len(values) - 1,
+                )
+
+        if progress_callback is not None:
+            progress_callback(
+                "feature",
+                feature_number,
+                total_features,
+                feature,
+            )
 
     # Return the chosen split. If no split was found, both values stay None.
     return best_feature, best_threshold, best_impurity
@@ -211,8 +234,12 @@ def build_tree(
     min_samples_split=2,
     min_samples_leaf=1,
     feature_names=None,
-    max_features=None
+    max_features=None,
+    progress_callback=None
 ):
+
+    if progress_callback is not None:
+        progress_callback("node", depth, len(y))
 
     # Stop if every sample in this node belongs to the same class.
     # This is a pure node, so no further split is needed.
@@ -242,7 +269,8 @@ def build_tree(
     feature, threshold, impurity = best_split(
         X,
         y,
-        features_for_this_node
+        features_for_this_node,
+        progress_callback,
     )
 
     # If no valid split exists, make this a leaf and predict the majority class.
@@ -294,6 +322,7 @@ def build_tree(
         min_samples_leaf,
         feature_names,
         max_features,
+        progress_callback,
     )
 
     node.right = build_tree(
@@ -304,7 +333,8 @@ def build_tree(
         min_samples_split,
         min_samples_leaf,
         feature_names,
-        max_features
+        max_features,
+        progress_callback
     )
 
     return node
@@ -348,7 +378,7 @@ class DecisionTree:
         self.min_samples_leaf = min_samples_leaf
         self.max_features = max_features
 
-    def fit(self, X, y):
+    def fit(self, X, y, progress_callback=None):
         # Build the tree from the training data.
         self.root = build_tree(
             X,
@@ -356,7 +386,8 @@ class DecisionTree:
             max_depth=self.max_depth,
             min_samples_split=self.min_samples_split,
             min_samples_leaf=self.min_samples_leaf,
-            max_features=self.max_features
+            max_features=self.max_features,
+            progress_callback=progress_callback
         )
 
     def predict(self, X):
