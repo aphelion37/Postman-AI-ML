@@ -38,7 +38,7 @@ At prediction time, we aggregate the outputs of all the trees. For classificatio
 If we denote the predictions of $B$ trees by $T_1, T_2, \dots, T_B$, then the ensemble prediction is $\bar{T} = \frac{1}{B}\sum_{i=1}^{B} T_i$. Its variance is
 
 $$
-\mathrm{Var}(\bar{T}) = \frac{1}{B^2}\left(\sum_{i=1}^{B} \mathrm{Var}(T_i) + 2\sum_{i<j} \mathrm{Cov}(T_i, T_j)\right)
+\mathrm{Var}(\bar{T}) = \frac{1}{B^2}\left(\sum_{i=1}^{B} \mathrm{Var}(T_i) + 2\sum_{i=1}^{B}\sum_{j=i+1}^{B} \mathrm{Cov}(T_i, T_j)\right)
 $$
 
 If all trees have the same variance $\sigma^2$ and pairwise correlation $\rho$, this becomes
