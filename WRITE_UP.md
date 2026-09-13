@@ -1,6 +1,6 @@
-### WRITE UP
+### Write Up
 
-##### How I learnt
+##### How I Learnt
 
 I started in Aug by going through all the resources provided in the first mail. I may have forgotten the specifics by now but I got a good feel for the basic aspects of statistical learning, some of the vocabulary and metrics, and developed an interest in the field.
 
@@ -22,21 +22,48 @@ I also wanted to run it on a huge dataset which theoretically should be predicta
 
 ##### How Decision Trees and Forests Work
 
-The heart of the decision tree is segmenting the entire observation space, traditionally orthogonal, and predicting the value of a point based on the class of the segment/leaf it lies within. Since we go top down, making simple 'greater than lesser than' splits across single features at a time, the algorithm is relatively fast to train and use. The optimum split is decided at that node based on what results in the least 'information lost' or max 'information gain' depending upon which representation of information you decide to use, like GINI or Entropy. Most functions to measure information/impurity form a curve like !\[Impurity]("C:\\projects\\postman aiml\\Postman-AI-ML\\basictree\\results\\Gini Impurity vs Entropy.png")
+The heart of the decision tree is segmenting the entire observation space, traditionally orthogonal, and predicting the value of a point based on the class of the segment or leaf it lies within. Since we go top down, making simple 'greater than / less than' splits across single features at a time, the algorithm is relatively fast to train and use. The optimum split is decided at that node based on what results in the least information loss, or maximum information gain, depending on the impurity measure used, such as Gini impurity or entropy. Most functions to measure information or impurity form a curve like the one shown in the image below.
 
+Decision trees are fundamentally high-variance models. They are extremely sensitive to the specifics of the training data, and early splits have an outsized influence on later ones. Factors like limiting the maximum depth, limiting the leaf size, or stopping splits when the node size is too small can reduce variance and hence reduce overfitting. Another method is pruning, which involves growing out a full tree and then trimming the less useful branches.
 
+The whole point of using ensembles (for example, a random forest) is to reduce variance.
 
-Decisions trees are fundamentally high variance models. They are extremely sensitive to the specifics of the training data and early splits have an outsized influence on later ones. Factors like limiting the max depth, limiting the leaf size or node size for splitting and reduce variance and hence overfitting. 
+###### Bagging
 
+Bagging, short for bootstrap aggregating, is basically training a bunch of trees on different random samples of the same dataset and then combining their predictions. To make each sample, we draw rows from the training data with replacement - repetitions allowed (only around 63% points end up unique), so some observations appear more than once while others are left out. That means each tree sees a slightly different version of the data, so they are not all making the same mistakes.
 
+At prediction time, we aggregate the outputs of all the trees. For classification, this is usually a majority vote; for regression, it is the average. A single decision tree is very sensitive to small changes in the training data, but averaging many trees smooths out that instability.
 
-The whole point of using ensembles (ie. a random forest) is to reduce the variance.
+If we denote the predictions of $B$ trees by $T_1, T_2, \dots, T_B$, then the ensemble prediction is $\bar{T} = \frac{1}{B}\sum_{i=1}^{B} T_i$. Its variance is
 
-###### Bagging:
+$$
+\mathrm{Var}(\bar{T}) = \frac{1}{B^2}\left(\sum_{i=1}^{B} \mathrm{Var}(T_i) + 2\sum_{i<j} \mathrm{Cov}(T_i, T_j)\right)
+$$
 
-###### Random Feature Selection:
+If all trees have the same variance $\sigma^2$ and pairwise correlation $\rho$, this becomes
 
+$$
+\mathrm{Var}(\bar{T}) = \frac{\sigma^2}{B} + \frac{B-1}{B}\rho\sigma^2
+$$
 
+This equation is the heart of the idea. The first term, $\sigma^2/B$, is the usual averaging effect: if the trees are roughly independent, then averaging many of them reduces the variance. $\frac{B-1}{B}\rho\sigma^2$ - as the trees become more correlated, this term gets larger and the benefit of averaging shrinks. So when the trees are all making similar deviations, the variance reduction is much weaker. This is why bagging helps: each tree is trained on a slightly different bootstrap sample, so they do not all make similar trees.
+
+###### Random Feature Selection
+
+Random feature selection is what makes a random forest different from a plain bagging ensemble. When a tree is split, instead of considering every feature at each node, we randomly choose a subset of features and only search among those. This prevents the model from repeatedly using the same strongest features and forces the trees to become more diverse. If every tree used the same highly predictive feature at each split, the ensemble would still be highly correlated and would not reduce variance as effectively.
+
+In practice, the number of features considered at each split is usually a small fraction of the total; for classification, it is often the square root of the number of features. This extra randomness decorrelates the trees and often improves generalisation. So while bagging reduces variance by averaging many trees, random feature selection reduces the correlation between those trees, which makes the ensemble more effective than a naive collection of similar trees.
+
+Both bagging and random feature selection help ensure that correlated deviations in the data do not survive. If all the trees in the ensemble are trained on similar data and then make similar splits, then their predictions will be highly correlated, so the ensemble does not gain much by averaging them. In other words, even with many trees, if they all learn the same pattern, the variance reduction is limited. This is especially relevant when some features are strongly related to each other or when a few features dominate the split decisions.
+
+###### Feature Importance
+
+Once a forest is trained, it is often useful to understand which features are driving the predictions. This is one of the strengths of decision trees: they are highly interpretable, and we can examine the exact rules that influence the model. I looked at two common ways to estimate feature importance: impurity-based importance and permutation importance.
+
+Impurity-based importance is computed directly from the tree structure. Each time a feature is used to split a node, it reduces the impurity of the child nodes compared to the parent. For a given feature, we can sum the reduction in impurity across all nodes where it was used, often weighted by the number of samples reaching that split. Features that create stronger, more useful splits are assigned larger importance scores. However, this may produce a misleading ranking when useful features are highly correlated, because only one of the correlated features may appear as the dominant split while the other carries similar information.
+
+Permutation importance is a more performance-based check. We take a trained model, randomly shuffle one feature in the validation or test set, and measure how much the accuracy or error worsens. If the feature is important, scrambling it should cause a noticeable drop in performance. Repeating this across features gives a ranking of which variables matter most. The advantage of permutation importance is that it directly measures the effect of a feature on predictive performance, not just on the internal split logic.
 
 ##### Learnings
+
 
