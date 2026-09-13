@@ -46,7 +46,7 @@ $$
 \mathrm{Var}(\bar{T}) = \frac{\sigma^2}{B} + \frac{B-1}{B}\rho\sigma^2
 $$
 
-This equation is the heart of the idea. The first term, $\sigma^2/B$, is the usual averaging effect: if the trees are roughly independent, then averaging many of them reduces the variance. $\frac{B-1}{B}\rho\sigma^2$ - as the trees become more correlated, this term gets larger and the benefit of averaging shrinks. So when the trees are all making similar deviations, the variance reduction is much weaker. This is why bagging helps: each tree is trained on a slightly different bootstrap sample, so they do not all make similar trees.
+This equation is the heart of the idea. The first term, $\frac{\sigma^2}{B}$, is the usual averaging effect: if the trees are roughly independent, then averaging many of them reduces the variance. The second term, $\frac{B-1}{B}\rho\sigma^2$, is the correlation penalty: as the trees become more correlated, this term gets larger and the benefit of averaging shrinks. So when the trees are all making similar predictions, the variance reduction is much weaker. This is why bagging helps: each tree is trained on a slightly different bootstrap sample, so they do not all learn the same thing.
 
 ###### Random Feature Selection
 
