@@ -15,11 +15,13 @@ I definitely am not good at using Git and realized that I wasn't on the main bra
 I did not implement regression and categorical variables mainly because I wanted to get till making forests before making changes in the tree code that would take me time to understand.
 
 From what I understand, a tree for regression is supposed to replace Gini impurity with a measure of numerical variation such as mean squared error, and store the mean target value at each leaf instead of the majority class. A regression forest would then average the predictions of its trees rather than using a majority vote. 
-Categorical predictor variables could be handled by one-hot encoding (basically treating each category as a seperate feature with value 1 or 0) them into binary columns, allowing the existing numerical split logic to use thresholds such as 0.5. I've hear more advanced implementation could split directly on groups of categories, but 
+Categorical predictor variables could be handled by one-hot encoding (basically treating each category as a seperate feature with value 1 or 0) them into binary columns, allowing the existing numerical split logic to use thresholds such as 0.5. I've hear more advanced implementation could split directly on groups of categories, but could read much and understand it properly.
+
+I couldnt get sklearn to run on my operating system as there was some problem (DLL - idk what it means) when it tried installing sci py. Hence I had to run it on google colab and was surprised when one of my model performed better than sklearn.
 
 I also wanted to run it on a huge dataset which theoretically should be predictable - so the 56000 x 24 lifestyle one seemed like a great option. It also made me realize the insane amount of compute power required for training. This set was so big that I simply couldn't finish training it. I had to significantly shorten it(by more than 95%) to reduce the training time for a single tree to just over an hour on my laptop. (Also made copilot add a progress check to confirm its still running). I got a max accuracy of 20% on that data after trying atleast 8 to 9 different parameter sets and even a forest with mutually exclusive tree datasets, with some tests even giving an accuracy worse than a random guess. Guess job type cant be predicted based on factors like bmi, stress levels or blood sugar, or the model works horribly on this particular dataset. 
 
-The fundamental question of whether a decision tree is actually useful today compared to other methods came to me quite late, after having a discussion with my friends about the task options we had. 
+The fundamental question of whether a decision tree is actually useful today compared to other methods came to me quite late, after having a discussion with my friends about the task options we had. It's quite a traditional/classical algorithm, which although is used in some parts of industry, has largely been under the shadow of modern 'deep learning' algorithms like neural networks which can be used in 'non standard' areas like computer vision.
 
 ##### How Decision Trees and Forests Work
 
@@ -35,7 +37,7 @@ Bagging, short for bootstrap aggregating, is basically training a bunch of trees
 
 At prediction time, we aggregate the outputs of all the trees. For classification, this is usually a majority vote; for regression, it is the average. A single decision tree is very sensitive to small changes in the training data, but averaging many trees smooths out that instability.
 
-If we denote the predictions of $B$ trees by $T_1, T_2, \dots, T_B$, then the ensemble prediction is $\bar{T} = \frac{1}{B}\sum_{i=1}^{B} T_i$. Its variance is
+If we denote the predictions of $B$ trees by $T_1, T_2, \dots, T_B$, then the ensemble prediction is $\bar{T} = \frac{1}{B}\sum_{i=1}^{B} T_i$. Its variance comes out to be
 
 $$
 \mathrm{Var}(\bar{T}) = \frac{1}{B^2}\left(\sum_{i=1}^{B} \mathrm{Var}(T_i) + 2\sum_{i=1}^{B}\sum_{j=i+1}^{B} \mathrm{Cov}(T_i, T_j)\right)
@@ -67,6 +69,6 @@ Permutation importance is a more performance-based check. We take a trained mode
 
 
 Apparently decision trees and forests are tradtionally used for structured, tabular data like credit scoring and loan approval, fraud detection, customer churn prediction, medical risk assessment, demand forecasting, recommendation systems, and marketing decisions. 
-Individual trees are useful for maximum interpretability, while random forests are useful when better predictive stability is needed. They are also often used as a strong baseline for a problem or to estimate feature importance before trying more complex models. Although other methods, such as gradient-boosted trees and neural networks, may perform better in many situations, forests remain practical because while they can model nonlinear relationships, they require relatively little preprocessing, and work well on many different types of tabular data.
+Individual trees are useful for maximum interpretability, while random forests are useful when better predictive stability is needed. They are also often used as a strong baseline for a problem or to estimate feature importance before trying more complex models. Although other methods, such as gradient-boosted trees (XGBoost) and neural networks, may perform better in many situations, forests remain practical because while they can model nonlinear relationships, they require relatively little preprocessing, and work well on many different types of tabular data.
 
 
