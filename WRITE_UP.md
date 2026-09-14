@@ -12,10 +12,10 @@ For writing the code, copilot and chatgpt were a big help as i told them to guid
 
 I definitely am not good at using Git and realized that I wasn't on the main branch for half the work I did. Anyhow I managed to make it work and show meaningful commits. I also ended up doing most of the work on a single file, but saved results from different experiments in the form of many screenshots. I also referred to the Stanford lecture for the theory.
 
-I did not implement regression and categorical variables mainly because I wanted to get till making forests before making changes in the tree code that would take me time to understand.
+I did not implement regression and categorical variables mainly because I wanted to get till making forests before making changes in the tree code that would take me time to properly understand.
 
-From what I understand, a tree for regression is supposed to replace Gini impurity with a measure of numerical variation such as mean squared error, and store the mean target value at each leaf instead of the majority class. A regression forest would then average the predictions of its trees rather than using a majority vote. 
-Categorical predictor variables could be handled by one-hot encoding (basically treating each category as a seperate feature with value 1 or 0) them into binary columns, allowing the existing numerical split logic to use thresholds such as 0.5. I've hear more advanced implementation could split directly on groups of categories, but could read much and understand it properly.
+From what I understand, a tree for regression is supposed to replace Gini impurity with a measure of numerical variation such as mean squared error, and store the mean target value at each leaf instead of the majority class. A regression forest would then average the predictions of its trees rather than using the majority. 
+Categorical predictor variables could be handled by one-hot encoding (basically treating each category as a seperate feature with value 1 or 0) them into binary columns, allowing the existing numerical split logic to use thresholds such as 0.5. I've hear more advanced implementation could split directly on groups of categories, but I could not read much and understand it properly.
 
 I couldnt get sklearn to run on my operating system as there was some problem (DLL - idk what it means) when it tried installing sci py. Hence I had to run it on google colab and was surprised when one of my model performed better than sklearn.
 
@@ -67,6 +67,7 @@ Impurity-based importance is computed directly from the tree structure. Each tim
 
 Permutation importance is a more performance-based check. We take a trained model, randomly shuffle one feature in the validation or test set, and measure how much the accuracy or error worsens. If the feature is important, scrambling it should cause a noticeable drop in performance. Repeating this across features gives a ranking of which variables matter most. The advantage of permutation importance is that it directly measures the effect of a feature on predictive performance, not just on the internal split logic.
 
+###### Applications
 
 Apparently decision trees and forests are tradtionally used for structured, tabular data like credit scoring and loan approval, fraud detection, customer churn prediction, medical risk assessment, demand forecasting, recommendation systems, and marketing decisions. 
 Individual trees are useful for maximum interpretability, while random forests are useful when better predictive stability is needed. They are also often used as a strong baseline for a problem or to estimate feature importance before trying more complex models. Although other methods, such as gradient-boosted trees (XGBoost) and neural networks, may perform better in many situations, forests remain practical because while they can model nonlinear relationships, they require relatively little preprocessing, and work well on many different types of tabular data.
