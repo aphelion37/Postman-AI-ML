@@ -3,7 +3,7 @@
 
 This repository contains a compact set of from-scratch machine learning experiments focused on decision trees and random forests. The project is designed as a practical learning exercise: implement the core algorithm directly, train on tabular datasets, compare performance, and inspect how model behavior changes with depth, feature importance, and dataset choice.
 
-The scripts in this project cover a few core ideas:
+The scripts in this project are meant to do the following things:
 
 - training a custom decision tree from scratch
 - evaluating performance with train/test splits
